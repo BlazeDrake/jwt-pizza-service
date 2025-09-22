@@ -21,6 +21,28 @@ test('login', async () => {
   expect(loginRes.body.user).toMatchObject(expectedUser);
 });
 
+test('logoutValid', async ()=>{
+  const loginResp = await request(app).put('/api/auth').send(testUser);
+
+  const logoutRes = await request(app).delete('/api/auth').set('authorization',`Bearer ${loginResp.body.token}`).send();
+  expect(logoutRes.status).toBe(200);
+})
+
+test('logoutInvalid',async ()=>{
+  const loginResp = await request(app).put('/api/auth').send(testUser);
+
+  const goodLogoutRes = await request(app).delete('/api/auth').set('authorization',`Bearer ${loginResp.body.token}`).send();
+
+  const badLogoutRes = await request(app).delete('/api/auth').set('authorization',`Bearer ${loginResp.body.token}`).send();
+  expect(badLogoutRes.status).toBe(401);
+})
+
+test('registerInvalid',async ()=>{
+  const registerRes = await request(app).post('/api/auth').send({});
+  expect(registerRes.status).toBe(400);
+  expect(registerRes.body?.message).toBe('name, email, and password are required');
+})
+
 function expectValidJwt(potentialJwt) {
   expect(potentialJwt).toMatch(/^[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*$/);
 }
