@@ -1,12 +1,11 @@
 const request = require('supertest');
 const app = require('../service');
-const { Role, DB } = require('../database/database.js');
+const { DB } = require('../database/database.js');
 const { randomName, createAdminUser } = require('./testUtil.js');
 
 const testUserBase = { name: 'pizza diner', email: 'reg@test.com', password: 'a' };
 let registeredUser;
 let testUserAuthToken;
-let loggedInUser;
 
 beforeAll(async () => {
   testUserBase.email = Math.random().toString(36).substring(2, 12) + '@test.com';
@@ -17,7 +16,6 @@ beforeAll(async () => {
   let loginRes= await request(app).put('/api/auth').send(testUserBase);
 
   testUserAuthToken = loginRes.body.token;
-  loggedInUser = loginRes.body.user;
 });
 
 test('getMenu', async()=>{

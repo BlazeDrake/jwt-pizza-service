@@ -1,7 +1,6 @@
 const request = require('supertest');
 const app = require('../service');
 const { DB } = require('../database/database.js');
-const e = require('express');
 const { createAdminUser, randomName } = require('./testUtil.js');
 
 let token;
@@ -19,9 +18,6 @@ beforeAll(async ()=>{
 
 //ensures the router calls the database function properly
 test("getAllFranchises",async ()=>{
-    let getFranchiseBody={
-        user: userLogin
-    }
     let dbCall={
         ...userLogin,
         isRole: ()=>true

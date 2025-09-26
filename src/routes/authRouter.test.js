@@ -32,6 +32,7 @@ test('logoutInvalid',async ()=>{
   const loginResp = await request(app).put('/api/auth').send(testUser);
 
   const goodLogoutRes = await request(app).delete('/api/auth').set('authorization',`Bearer ${loginResp.body.token}`).send();
+  expect(goodLogoutRes.status).toBe(200);
 
   const badLogoutRes = await request(app).delete('/api/auth').set('authorization',`Bearer ${loginResp.body.token}`).send();
   expect(badLogoutRes.status).toBe(401);
