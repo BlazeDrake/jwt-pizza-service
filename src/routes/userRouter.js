@@ -75,7 +75,7 @@ userRouter.get(
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
 
-    const [dbUsers,more] = await DB.listUsers(req.query.page,req.query.limit,req.query.name);
+    const dbUsers= (await DB.listUsers(req.query.page,req.query.limit,req.query.name))[0];
     res.json({users: dbUsers});
   })
 );

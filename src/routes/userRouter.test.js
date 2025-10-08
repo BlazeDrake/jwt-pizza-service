@@ -30,7 +30,7 @@ test('list users with page length', async ()=>{
 })
 
 test('list users with page offset', async ()=>{
-  const [listUsersRes,dbUsers] = await testGetUsers(page=1);
+  const [listUsersRes,dbUsers] = await testGetUsers(1);
   expect(listUsersRes.body.users?.length).toBe(dbUsers.length);
   expect(listUsersRes.body.users[0]?.email).toBe(dbUsers[0]?.email)
 })
@@ -78,7 +78,7 @@ async function testGetUsers(page=undefined,limit=undefined,name=undefined){
     query=query.slice(0,query.length-1)
   }
 
-  const [dbUsers,more] = await DB.listUsers(page=page,limit=limit,name=name);
+  const dbUsers= (await DB.listUsers(page,limit,name))[0];
 
   const listUsersRes = await request(app)
     .get(`/api/user?${query}`)
