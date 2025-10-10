@@ -60,6 +60,45 @@ test('update user',async ()=>{
     expect(dbUser.name).toBe(updateUserReq.name)
 })
 
+test('delete user unauthorized', async () => {
+  const deleteUserRes = await request(app).delete('/api/user/1');
+
+  expect(deleteUserRes.status).toBe(401);
+});
+
+test('delete user not admin', async () => {
+
+  const testUserBase = (await registerUser(request(app)))[0];
+
+  const loginRes= await request(app).put('/api/auth').send(testUserBase);
+
+  let testUserAuthToken = loginRes.body.token;
+
+  const deleteUserRes = await request(app).delete('/api/user/1').set('authorization',`Bearer ${testUserAuthToken}`);
+
+  expect(deleteUserRes.status).toBe(403);
+});
+
+test('delete user valid', async ()=>{
+    const user = await createAdminUser();
+    const loginRes= await request(app).put('/api/auth').send(user);
+    const token = loginRes.body.token;
+
+    let deletedUser = (await registerUser(request(app)))[0]
+
+    //ensure the user does exist before deletion
+    const userExists= await DB.getUser(deletedUser.email,deletedUser.password)
+
+    expect(userExists?.id).toBe(deletedUser.id)
+
+    const deleteUserRes = await request(app).delete(`/api/user/${deletedUser.id}`).set('authorization',`Bearer ${token}`);
+
+    expect(deleteUserRes.status).toBe(200);
+    await expect(DB.getUser(deletedUser.email,deletedUser.password)).rejects.toThrow('unknown user');
+  })
+
+
+
 async function testGetUsers(page=undefined,limit=undefined,name=undefined){
   const user = await createAdminUser();
   const loginRes= await request(app).put('/api/auth').send(user);
