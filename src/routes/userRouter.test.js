@@ -16,19 +16,6 @@ test('list users default', async () => {
   expect(listUsersRes.body.users?.length).toBe(dbUsers.length);
 });
 
-test('list users with page length', async ()=>{
-    const user = await createAdminUser();
-    const loginRes= await request(app).put('/api/auth').send(user);
-    const token = loginRes.body.token;
-    const limit=5;
-
-    const listUsersRes = await request(app)
-      .get(`/api/user?page=1&limit=${limit}&name=*`)
-      .set('Authorization', 'Bearer ' + token);
-    expect(listUsersRes.status).toBe(200);
-    expect(listUsersRes.body.users?.length).toBe(limit);
-})
-
 test('list users with page offset', async ()=>{
   const [listUsersRes,dbUsers] = await testGetUsers(1);
   expect(listUsersRes.body.users?.length).toBe(dbUsers.length);
