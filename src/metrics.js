@@ -7,7 +7,13 @@ const metricsConfig = config.metrics;
 let requests = 0;
 let latency = 0;
 
-let httpMetrics=[];
+let httpMetrics={
+  "total":0,
+  "GET":0,
+  "POST":0,
+  "PUT":0,
+  "DELETE":0,
+}
 
 
 function getCpuUsagePercentage() {
@@ -23,7 +29,7 @@ function getMemoryUsagePercentage() {
   return memoryUsage.toFixed(2);
 }
 
-function sendMetricToGrafana(metricName, metricValue, type, unit) {
+function sendIntMetric(metricName, metricValue, type, unit) {
   const metric = {
     resourceMetrics: [
       {
@@ -38,6 +44,10 @@ function sendMetricToGrafana(metricName, metricValue, type, unit) {
                     {
                       asInt: metricValue,
                       timeUnixNano: Date.now() * 1000000,
+                      attributes: [{
+                        key: "source",
+                        value: { stringValue: "jwt-pizza-service" }
+                      }],
                     },
                   ],
                 },
@@ -66,7 +76,7 @@ function sendMetricToGrafana(metricName, metricValue, type, unit) {
           console.error(`Failed to push metrics data to Grafana: ${text}\n${body}`);
         });
       } else {
-        console.log(`Pushed ${metricName}`);
+        //console.log(`Pushed ${metricName}`);
       }
     })
     .catch((error) => {
@@ -77,20 +87,30 @@ function sendMetricToGrafana(metricName, metricValue, type, unit) {
 const metrics={
   async requestTracker(req, res, next){
     //console.log(req);
-
+    if(req.method in httpMetrics){
+      httpMetrics[req.method]++;
+    }
+    httpMetrics.total++;
+    
     next();
   },
 
   sendMetricsPeriodically(interval){
     const timer = setInterval(()=>{
-      console.log("sending metrics")
+      //console.log("sending metrics")
       try{
         //system metrics
         const cpuValue = Math.round(getCpuUsagePercentage());
-        sendMetricToGrafana('cpu-percent', cpuValue, 'gauge', '%');
+        sendIntMetric('cpu-percent', cpuValue, 'gauge', '%');
         const memoryValue = Math.round(getMemoryUsagePercentage());
-        sendMetricToGrafana('memory-percent', memoryValue, 'gauge', '%');
+        sendIntMetric('memory-percent', memoryValue, 'gauge', '%');
         //http requests
+         //console.log(httpMetrics);
+        for(key in httpMetrics){
+          sendIntMetric(`${key.toLowerCase()}-requests`,httpMetrics[key],'sum','1');
+          httpMetrics[key]=0;
+        }
+       
       }
       catch(error){
         console.log('Error sending metrics', error);
