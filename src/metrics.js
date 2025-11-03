@@ -1,10 +1,10 @@
 const express = require('express');
 const config = require('./config');
 const os = require('os');
+const { log } = require('console');
 
 const metricsConfig = config.metrics;
 
-let requests = 0;
 let latency = 0;
 
 let httpMetrics={
@@ -15,6 +15,7 @@ let httpMetrics={
   "DELETE":0,
 }
 
+let loggedInUsers=0;
 
 function getCpuUsagePercentage() {
   const cpuUsage = os.loadavg()[0] / os.cpus().length;
@@ -29,7 +30,7 @@ function getMemoryUsagePercentage() {
   return memoryUsage.toFixed(2);
 }
 
-function sendIntMetric(metricName, metricValue, type, unit) {
+async function sendIntMetric(metricName, metricValue, type, unit) {
   const metric = {
     resourceMetrics: [
       {
@@ -65,7 +66,7 @@ function sendIntMetric(metricName, metricValue, type, unit) {
   }
 
   const body = JSON.stringify(metric);
-  fetch(`${metricsConfig.url}`, {
+  await fetch(`${metricsConfig.url}`, {
     method: 'POST',
     body: body,
     headers: { Authorization: `Bearer ${metricsConfig.apiKey}`, 'Content-Type': 'application/json' },
@@ -89,14 +90,28 @@ const metrics={
     //console.log(req);
     if(req.method in httpMetrics){
       httpMetrics[req.method]++;
+      //console.log(`Adding ${req.method} request...`)
+    }else{
+      //console.log(`Skipping ${req.method} request...`)
     }
     httpMetrics.total++;
     
     next();
   },
 
-  sendMetricsPeriodically(interval){
-    const timer = setInterval(()=>{
+  loginUser(){
+    loggedInUsers++;
+  },
+
+  logoutUser(){
+    loggedInUsers--;
+    if(loggedInUsers<0){
+      loggedInUsers=0;
+    }
+  },
+
+  async sendMetricsPeriodically(interval){
+    const timer = setInterval(async ()=>{
       //console.log("sending metrics")
       try{
         //system metrics
@@ -105,12 +120,15 @@ const metrics={
         const memoryValue = Math.round(getMemoryUsagePercentage());
         sendIntMetric('memory-percent', memoryValue, 'gauge', '%');
         //http requests
-         //console.log(httpMetrics);
+        //console.log(httpMetrics);
         for(key in httpMetrics){
-          sendIntMetric(`${key.toLowerCase()}-requests`,httpMetrics[key],'sum','1');
+          await sendIntMetric(`${key.toLowerCase()}-requests`,httpMetrics[key],'sum','1');
           httpMetrics[key]=0;
         }
-       
+
+        //logged in users
+        console.log(`active users: ${loggedInUsers}`);
+        sendIntMetric('active-users',loggedInUsers,'sum','1');
       }
       catch(error){
         console.log('Error sending metrics', error);
