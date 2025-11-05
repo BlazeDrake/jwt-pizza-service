@@ -89,8 +89,10 @@ orderRouter.post(
     metrics.recordLatency('pizza-service',Date.now()-startTime);
     const j = await r.json();
     if (r.ok) {
+      metrics.pizzaSold(req.body);
       res.send({ order, followLinkToEndChaos: j.reportUrl, jwt: j.jwt });
     } else {
+      metrics.pizzaFailed();
       res.status(500).send({ message: 'Failed to fulfill order at factory', followLinkToEndChaos: j.reportUrl });
     }
     metrics.recordLatency('pizza-creation',Date.now()-startTime);

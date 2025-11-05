@@ -1,5 +1,4 @@
 
-const { fail } = require('assert');
 const config = require('./config');
 const os = require('os');
 
@@ -23,6 +22,10 @@ let loggedInUsers=0;
 let successfulLogins=0;
 let failedLogins=0;
 
+let pizzasSold=0;
+let pizzasFailed=0;
+let revenue=0;
+
 function getCpuUsagePercentage() {
   const cpuUsage = os.loadavg()[0] / os.cpus().length;
   return cpuUsage.toFixed(2) * 100;
@@ -36,7 +39,7 @@ function getMemoryUsagePercentage() {
   return memoryUsage.toFixed(2);
 }
 
-async function sendIntMetric(metricName, metricValue, type, unit) {
+async function sendMetric(metricName, metricValue, type, unit, numType = 'asInt') {
   const metric = {
     resourceMetrics: [
       {
@@ -49,7 +52,7 @@ async function sendIntMetric(metricName, metricValue, type, unit) {
                 [type]: {
                   dataPoints: [
                     {
-                      asInt: metricValue,
+                      [numType]: metricValue,
                       timeUnixNano: Date.now() * 1000000,
                       attributes: [{
                         key: "source",
@@ -124,6 +127,17 @@ const metrics={
     latency[type]?.push(value);
   },
 
+  pizzaSold(order){
+    order?.items.forEach((item)=>{
+      revenue+=item?.price;
+    });
+    pizzasSold++;
+  },
+
+  pizzaFailed(){
+    pizzasFailed++;
+  },
+
   async sendMetricsPeriodically(){
     //secondly reports
     setInterval(async ()=>{
@@ -131,12 +145,12 @@ const metrics={
       try{
         //system metrics
         const cpuValue = Math.round(getCpuUsagePercentage());
-        sendIntMetric('cpu-percent', cpuValue, 'gauge', '%');
+        sendMetric('cpu-percent', cpuValue, 'gauge', '%');
         const memoryValue = Math.round(getMemoryUsagePercentage());
-        sendIntMetric('memory-percent', memoryValue, 'gauge', '%');
+        sendMetric('memory-percent', memoryValue, 'gauge', '%');
         //logged in users
         //console.log(`active users: ${loggedInUsers}`);
-        sendIntMetric('active-users',loggedInUsers,'sum','1');
+        sendMetric('active-users',loggedInUsers,'sum','1');
 
         //latency
         //console.log(latency);
@@ -144,11 +158,12 @@ const metrics={
         for(key in latency){
 
           latency[key]?.forEach(async (time)=>{
-            await sendIntMetric(key+'-latency',time,'sum','ms')
+            await sendMetric(key+'-latency',time,'sum','ms')
           })
 
           latency[key]=[];
         }
+        
       }
       catch(error){
         console.log('Error sending metrics', error);
@@ -161,16 +176,25 @@ const metrics={
         //console.log(httpMetrics);
         let key;
         for(key in httpMetrics){
-          await sendIntMetric(`${key.toLowerCase()}-requests`,httpMetrics[key],'sum','1');
+          await sendMetric(`${key.toLowerCase()}-requests`,httpMetrics[key],'sum','1');
           httpMetrics[key]=0;
         }
 
         //auth info
         //console.log(`Successful Logins: ${successfulLogins}, Failed Logins: ${failedLogins}`);
-        await sendIntMetric('successful-logins',successfulLogins,'sum','1');
+        await sendMetric('successful-logins',successfulLogins,'sum','1');
         successfulLogins=0;
-        await sendIntMetric('failed-logins',failedLogins,'sum','1');
+        await sendMetric('failed-logins',failedLogins,'sum','1');
         failedLogins=0;
+
+        //pizzas
+        console.log(`${pizzasSold} orders completed, ${pizzasFailed} orders failed, ${revenue} bitcoin made`)
+        await sendMetric('pizzas-sold',pizzasSold,'sum','1');
+        pizzasSold=0;
+        await sendMetric('pizzas-failed',pizzasFailed,'sum','1');
+        pizzasFailed=0;
+        await sendMetric('revenue',revenue,'sum','1','asDouble');
+        revenue=0;
       }
       catch(error){
         console.log('Error sending metrics', error);
