@@ -3,6 +3,6 @@ const metrics = require('./metrics.js');
 
 const port = process.argv[2] || 3000;
 app.listen(port, () => {
-  metrics.sendMetricsPeriodically(5000);
+  metrics.sendMetricsPeriodically();
   console.log(`Server started on port ${port}`);
 });

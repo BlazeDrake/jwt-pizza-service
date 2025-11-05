@@ -1,11 +1,14 @@
-const express = require('express');
+
+const { fail } = require('assert');
 const config = require('./config');
 const os = require('os');
-const { log } = require('console');
 
 const metricsConfig = config.metrics;
 
-let latency = 0;
+const latency={
+  'pizza-service':[],
+  'pizza-creation':[]
+}
 
 let httpMetrics={
   "total":0,
@@ -16,6 +19,9 @@ let httpMetrics={
 }
 
 let loggedInUsers=0;
+
+let successfulLogins=0;
+let failedLogins=0;
 
 function getCpuUsagePercentage() {
   const cpuUsage = os.loadavg()[0] / os.cpus().length;
@@ -95,12 +101,16 @@ const metrics={
       //console.log(`Skipping ${req.method} request...`)
     }
     httpMetrics.total++;
-    
     next();
   },
 
   loginUser(){
     loggedInUsers++;
+    successfulLogins++;
+  },
+
+  failedLogin(){
+    failedLogins++;
   },
 
   logoutUser(){
@@ -110,8 +120,13 @@ const metrics={
     }
   },
 
-  async sendMetricsPeriodically(interval){
-    const timer = setInterval(async ()=>{
+  recordLatency(type,value){
+    latency[type]?.push(value);
+  },
+
+  async sendMetricsPeriodically(){
+    //secondly reports
+    setInterval(async ()=>{
       //console.log("sending metrics")
       try{
         //system metrics
@@ -119,21 +134,48 @@ const metrics={
         sendIntMetric('cpu-percent', cpuValue, 'gauge', '%');
         const memoryValue = Math.round(getMemoryUsagePercentage());
         sendIntMetric('memory-percent', memoryValue, 'gauge', '%');
-        //http requests
+        //logged in users
+        //console.log(`active users: ${loggedInUsers}`);
+        sendIntMetric('active-users',loggedInUsers,'sum','1');
+
+        //latency
+        //console.log(latency);
+        let key;
+        for(key in latency){
+
+          latency[key]?.forEach(async (time)=>{
+            await sendIntMetric(key+'-latency',time,'sum','ms')
+          })
+
+          latency[key]=[];
+        }
+      }
+      catch(error){
+        console.log('Error sending metrics', error);
+      }
+    },1000);
+    //minutely reports
+    setInterval(async ()=>{
+      try{
+                //http requests
         //console.log(httpMetrics);
+        let key;
         for(key in httpMetrics){
           await sendIntMetric(`${key.toLowerCase()}-requests`,httpMetrics[key],'sum','1');
           httpMetrics[key]=0;
         }
 
-        //logged in users
-        console.log(`active users: ${loggedInUsers}`);
-        sendIntMetric('active-users',loggedInUsers,'sum','1');
+        //auth info
+        //console.log(`Successful Logins: ${successfulLogins}, Failed Logins: ${failedLogins}`);
+        await sendIntMetric('successful-logins',successfulLogins,'sum','1');
+        successfulLogins=0;
+        await sendIntMetric('failed-logins',failedLogins,'sum','1');
+        failedLogins=0;
       }
       catch(error){
         console.log('Error sending metrics', error);
       }
-    },interval);
+    },60000)
   }
 }
 

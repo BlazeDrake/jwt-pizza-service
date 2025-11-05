@@ -1,7 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const config = require('../config.js');
-const { asyncHandler } = require('../endpointHelper.js');
+const { asyncHandler, StatusCodeError } = require('../endpointHelper.js');
 const { DB, Role } = require('../database/database.js');
 const metrics = require('../metrics.js');
 
@@ -74,10 +74,17 @@ authRouter.post(
 authRouter.put(
   '/',
   asyncHandler(async (req, res) => {
-    const { email, password } = req.body;
-    const user = await DB.getUser(email, password);
-    const auth = await setAuth(user);
-    res.json({ user: user, token: auth });
+    try{
+      const { email, password } = req.body;
+      const user = await DB.getUser(email, password);
+      const auth = await setAuth(user);
+      res.json({ user: user, token: auth });
+    }
+    catch(e){
+      if(e?.statusCode==404&&e.message=='unknown user'){
+        metrics.failedLogin();
+      }
+    }
   })
 );
 

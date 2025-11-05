@@ -20,6 +20,10 @@ app.use((req, res, next) => {
 app.use(metrics.requestTracker);
 
 
+//add latency middleware
+//app.use(metrics.startLatency)
+
+
 const apiRouter = express.Router();
 app.use('/api', apiRouter);
 apiRouter.use('/auth', authRouter);
