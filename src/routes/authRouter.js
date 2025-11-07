@@ -84,7 +84,10 @@ authRouter.put(
     console.log("PUT START")
     try{
       const { email, password } = req.body;
+      console.log(req.body);
+      console.log("getting from db...")
       const user = await DB.getUser(email, password);
+      console.log("setting auth...")
       const auth = await setAuth(user);
       res.json({ user: user, token: auth });
       console.log("PUT DONE")
