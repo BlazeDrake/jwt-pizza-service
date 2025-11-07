@@ -56,7 +56,7 @@ async function sendMetric(metricName, metricValue, type, unit, numType = 'asInt'
                       timeUnixNano: Date.now() * 1000000,
                       attributes: [{
                         key: "source",
-                        value: { stringValue: "jwt-pizza-service" }
+                        value: { stringValue: config.metrics.source }
                       }],
                     },
                   ],
@@ -188,7 +188,7 @@ const metrics={
         failedLogins=0;
 
         //pizzas
-        console.log(`${pizzasSold} orders completed, ${pizzasFailed} orders failed, ${revenue} bitcoin made`)
+        //console.log(`${pizzasSold} orders completed, ${pizzasFailed} orders failed, ${revenue} bitcoin made`)
         await sendMetric('pizzas-sold',pizzasSold,'sum','1');
         pizzasSold=0;
         await sendMetric('pizzas-failed',pizzasFailed,'sum','1');
