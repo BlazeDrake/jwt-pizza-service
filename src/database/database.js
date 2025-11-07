@@ -73,8 +73,10 @@ class DB {
   }
 
   async getUser(email, password) {
+    console.log('getting connection')
     const connection = await this.getConnection();
     try {
+      console.log("starting query")
       const userResult = await this.query(connection, `SELECT * FROM user WHERE email=?`, [email]);
       const user = userResult[0];
       if (!user || (password && !(await bcrypt.compare(password, user.password)))) {
@@ -355,7 +357,9 @@ class DB {
 
   async getConnection() {
     // Make sure the database is initialized before trying to get a connection.
+    console.log("ensuring db is initialized")
     await this.initialized;
+    console.log("initialization check done")
     return this._getConnection();
   }
 
