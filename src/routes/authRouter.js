@@ -48,10 +48,6 @@ async function setAuthUser(req, res, next) {
   next();
 }
 
-authRouter.use((req,res,next)=>{
-  console.log("auth router called");
-  next();
-})
 
 // Authenticate token
 authRouter.authenticateToken = (req, res, next) => {
@@ -65,7 +61,7 @@ authRouter.authenticateToken = (req, res, next) => {
 authRouter.post(
   '/',
   asyncHandler(async (req, res) => {
-    console.log("POST START")
+    //console.log("POST START")
     const { name, email, password } = req.body;
     if (!name || !email || !password) {
       return res.status(400).json({ message: 'name, email, and password are required' });
@@ -73,7 +69,7 @@ authRouter.post(
     const user = await DB.addUser({ name, email, password, roles: [{ role: Role.Diner }] });
     const auth = await setAuth(user);
     res.json({ user: user, token: auth });
-    console.log("POST DONE")
+    //console.log("POST DONE")
   })
 );
 
@@ -81,16 +77,16 @@ authRouter.post(
 authRouter.put(
   '/',
   asyncHandler(async (req, res) => {
-    console.log("PUT START")
+    //console.log("PUT START")
     try{
       const { email, password } = req.body;
-      console.log(req.body);
-      console.log("getting from db...")
+      //console.log(req.body);
+      //console.log("getting from db...")
       const user = await DB.getUser(email, password);
-      console.log("setting auth...")
+      //console.log("setting auth...")
       const auth = await setAuth(user);
       res.json({ user: user, token: auth });
-      console.log("PUT DONE")
+      //console.log("PUT DONE")
     }
     catch(e){
       if(e?.statusCode==404&&e.message=='unknown user'){
@@ -105,10 +101,10 @@ authRouter.delete(
   '/',
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
-    console.log("DELETE START")
+    //console.log("DELETE START")
     await clearAuth(req);
     res.json({ message: 'logout successful' });
-    console.log("DELETE DONE")
+    //console.log("DELETE DONE")
   })
 );
 

@@ -166,7 +166,7 @@ const metrics={
         
       }
       catch(error){
-        console.log('Error sending metrics', error);
+        //console.log('Error sending metrics', error);
       }
     },1000);
     //minutely reports
@@ -197,7 +197,7 @@ const metrics={
         revenue=0;
       }
       catch(error){
-        console.log('Error sending metrics', error);
+        //console.log('Error sending metrics', error);
       }
     },60000)
   }
