@@ -1,6 +1,7 @@
 
 const config = require('./config');
 const os = require('os');
+const logger = require('./logger');
 
 const metricsConfig = config.metrics;
 
@@ -90,7 +91,7 @@ async function sendMetric(metricName, metricValue, type, unit, numType = 'asInt'
       }
     })
     .catch((error) => {
-      console.error('Error pushing metrics:', error);
+      logger.logError('Error pushing metrics:', error);
     });
 }
 
@@ -166,7 +167,7 @@ const metrics={
         
       }
       catch(error){
-        //console.log('Error sending metrics', error);
+        logger.logError('Error sending metrics', error);
       }
     },1000);
     //minutely reports
@@ -197,7 +198,7 @@ const metrics={
         revenue=0;
       }
       catch(error){
-        //console.log('Error sending metrics', error);
+        logger.logError('Error sending metrics', error);
       }
     },60000)
   }

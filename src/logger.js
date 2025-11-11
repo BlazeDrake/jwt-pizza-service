@@ -1,4 +1,4 @@
-const config = require('./config.json');
+const config = require('./config.js');
 
 class Logger {
   httpLogger = (req, res, next) => {
@@ -20,8 +20,23 @@ class Logger {
     next();
   };
 
+  logError(message, error){
+    console.log(message,error);
+    //not implemented yet
+  }
+
+  logDB(query){
+    this.log("info","db",{reqBody:query});
+  }
+
+  logFactory(req,res,status){
+    const level=this.statusToLogLevel(status);
+    this.log(level,"factory",{reqBody:req,resBody:res});
+    
+  }
+
   log(level, type, logData) {
-    const labels = { component: config.source, level: level, type: type };
+    const labels = { component: config.logs.source, level: level, type: type };
     const values = [this.nowString(), this.sanitize(logData)];
     const logEvent = { streams: [{ stream: labels, values: [values] }] };
 
@@ -40,17 +55,19 @@ class Logger {
 
   sanitize(logData) {
     logData = JSON.stringify(logData);
-    return logData.replace(/\\"password\\":\s*\\"[^"]*\\"/g, '\\"password\\": \\"*****\\"');
+    return logData
+      .replace(/\\"password\\":\s*\\"[^"]*\\"/g, '\\"password\\": \\"*****\\"')
+      .replace(/\\"token\\":\s*\\"[^"]*\\"/g, '\\"token\\": \\"*****\\"');
   }
 
   sendLogToGrafana(event) {
     const body = JSON.stringify(event);
-    fetch(`${config.url}`, {
+    fetch(`${config.logs.url}`, {
       method: 'post',
       body: body,
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${config.userId}:${config.apiKey}`,
+        Authorization: `Bearer ${config.logs.userId}:${config.logs.apiKey}`,
       },
     }).then((res) => {
       if (!res.ok) console.log('Failed to send log to Grafana');
