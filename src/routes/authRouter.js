@@ -57,6 +57,13 @@ authRouter.authenticateToken = (req, res, next) => {
   next();
 };
 
+// Add this helper function near the top with other helper functions
+function sanitizeUser(user) {
+  const { password, ...sanitized } = user;
+  return sanitized;
+}
+
+
 // register
 authRouter.post(
   '/',
@@ -68,7 +75,7 @@ authRouter.post(
     }
     const user = await DB.addUser({ name, email, password, roles: [{ role: Role.Diner }] });
     const auth = await setAuth(user);
-    res.json({ user: user, token: auth });
+    res.json({ user: sanitizeUser(user), token: auth });
     //console.log("POST DONE")
   })
 );
@@ -85,7 +92,7 @@ authRouter.put(
       const user = await DB.getUser(email, password);
       //console.log("setting auth...")
       const auth = await setAuth(user);
-      res.json({ user: user, token: auth });
+      res.json({ user: sanitizeUser(user), token: auth });
       //console.log("PUT DONE")
     }
     catch(e){

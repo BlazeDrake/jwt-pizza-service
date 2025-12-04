@@ -58,7 +58,11 @@ franchiseRouter.docs = [
 // getFranchises
 franchiseRouter.get(
   '/',
+  authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
+    if (!req.user.isRole(Role.Admin)) {
+      throw new StatusCodeError('unable to load franchises', 403);
+    }
     const [franchises, more] = await DB.getFranchises(req.user, req.query.page, req.query.limit, req.query.name);
     res.json({ franchises, more });
   })
@@ -96,7 +100,11 @@ franchiseRouter.post(
 // deleteFranchise
 franchiseRouter.delete(
   '/:franchiseId',
+  authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
+    if (!req.user.isRole(Role.Admin)) {
+      throw new StatusCodeError('unable to delete a franchise', 403);
+    }
     const franchiseId = Number(req.params.franchiseId);
     await DB.deleteFranchise(franchiseId);
     res.json({ message: 'franchise deleted' });
