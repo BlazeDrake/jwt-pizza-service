@@ -59,8 +59,8 @@ authRouter.authenticateToken = (req, res, next) => {
 
 // Add this helper function near the top with other helper functions
 function sanitizeUser(user) {
-  const { password, ...sanitized } = user;
-  return sanitized;
+  user.password="*****";
+  return user;
 }
 
 
